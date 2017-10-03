@@ -7,8 +7,8 @@ case class Location(lat: Double, lon: Double) {
 }
 
 
-case class Point(x: Double, y: Double) {
-  lazy val location: Location = Location(toDegrees(x), toDegrees(y))
+case class Point(lat: Double, lon: Double) {
+  lazy val location: Location = Location(toDegrees(lat), toDegrees(lon))
 }
 
 case class Color(red: Int, green: Int, blue: Int)

@@ -67,7 +67,7 @@ trait ExtractionTest extends FunSuite {
   test("readStationsTest") {
     val stations = Extraction.readStations("/stations-test.csv")
 
-    assert(stations.count() === 19¡)
+    assert(stations.count() === 19)
     val station = stations.collect()(0)
 
     assert(station._1._1 === "")

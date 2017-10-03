@@ -1,12 +1,15 @@
 package observatory
 
-import com.sksamuel.scrimage.{Image, Pixel}
+import com.sksamuel.scrimage.Image
+import scala.math._
 
 /**
   * 2nd milestone: basic visualization
   */
 object Visualization {
 
+  val EARTH_RADIUS = 6371.0
+  val P = 3.0
 
 
   /**
@@ -16,16 +19,47 @@ object Visualization {
     */
   def predictTemperature(temperatures: Iterable[(Location, Double)], location: Location): Double = {
 
-    val combs = distanceTempCombination(temperatures, location)
+    val predictions = distanceTempCombination(temperatures, location)
+
+    predictions.find{ case (distance, temp) => distance <= 1.0} match {
+      case Some((_, temp)) => temp
+      case _ => idw(predictions, P)
+    }
+  }
+
+
+  def idw(predictions: Iterable[(Double, Double)], p: Double): Double = {
+
+    def w(distance: Double) = 1/pow(distance, P)
+
+    val (num, denom) = predictions
+      .aggregate((0.0, 0.0))(
+        {
+          case ((ws, iws), (distance, temp)) => {
+            val resp = w(distance)
+            (resp * temp + ws, resp + iws)
+          }
+        }, {
+          case ((wsA, iwsA), (wsB, iwsB)) => (wsA + wsB, iwsA + iwsB)
+        }
+      )
+    num / denom
   }
 
   /**
     * Calculates Great Circle Distance between two locations
+    *
     * @param location
     * @param otherLocation
     * @return
     */
-  def gdc(location: Location, otherLocation: Location) = ???
+  def gdc(location: Location, otherLocation: Location) = {
+    val deltaSigma = acos(
+      sin(location.point.lat) * sin(otherLocation.point.lat) +
+      cos(location.point.lat) * cos(otherLocation.point.lat) * cos(abs(location.point.lon - otherLocation.point.lon))
+    )
+    EARTH_RADIUS * deltaSigma
+  }
 
   /**
     * Calculates the series of distances between list of (temperatures, Location) and a given Location
