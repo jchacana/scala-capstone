@@ -79,7 +79,28 @@ object Visualization {
     * @return The color that corresponds to `value`, according to the color scale defined by `points`
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
-    ???
+    val sortedPoints = points.toList.sortWith(_._1 < _._1).toArray
+
+    for(i <- 0 until sortedPoints.length - 1) {
+      (sortedPoints(i), sortedPoints(i + 1)) match {
+        case ((v1, Color(r1, g1, b1)), (v2, Color(r2, g2, b2))) => {
+          if(v1 > value) {
+            Color(r1, g1, b1)
+          }
+          else if (v2 > value) {
+            val ratio = (value - v1) / (v2 - v1)
+            Color(
+              math.round(r1 + (r2 - r1) * ratio).toInt,
+              math.round(g1 + (g2 - g1) * ratio).toInt,
+              math.round(b1 + (b2 - b1) * ratio).toInt
+            )
+          }
+        }
+      }
+    }
+
+    sortedPoints(sortedPoints.length - 1)._2
+
   }
 
   /**
