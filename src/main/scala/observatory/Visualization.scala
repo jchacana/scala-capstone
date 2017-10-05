@@ -1,6 +1,7 @@
 package observatory
 
-import com.sksamuel.scrimage.Image
+import com.sksamuel.scrimage.{Image, Pixel}
+
 import scala.math._
 
 /**
@@ -10,6 +11,9 @@ object Visualization {
 
   val EARTH_RADIUS = 6371.0
   val P = 3.0
+
+  val IMG_WIDTH = 360
+  val IMG_HEIGHT = 180
 
 
   /**
@@ -73,34 +77,34 @@ object Visualization {
     }
   }
 
+
+
   /**
     * @param points Pairs containing a value and its associated color
     * @param value The value to interpolate
     * @return The color that corresponds to `value`, according to the color scale defined by `points`
     */
   def interpolateColor(points: Iterable[(Double, Color)], value: Double): Color = {
-    val sortedPoints = points.toList.sortWith(_._1 < _._1).toArray
 
-    for(i <- 0 until sortedPoints.length - 1) {
-      (sortedPoints(i), sortedPoints(i + 1)) match {
-        case ((v1, Color(r1, g1, b1)), (v2, Color(r2, g2, b2))) => {
-          if(v1 > value) {
-            Color(r1, g1, b1)
-          }
-          else if (v2 > value) {
-            val ratio = (value - v1) / (v2 - v1)
-            Color(
-              math.round(r1 + (r2 - r1) * ratio).toInt,
-              math.round(g1 + (g2 - g1) * ratio).toInt,
-              math.round(b1 + (b2 - b1) * ratio).toInt
-            )
-          }
-        }
+    points.find(p => p._1 == value) match {
+      case Some((_, color)) => color
+      case None => {
+        val (smaller, greater) = points.toList.sortBy(_._1).partition(_._1 < value)
+        interpolation(smaller.last, greater.head, value)
       }
     }
+  }
 
-    sortedPoints(sortedPoints.length - 1)._2
-
+  def interpolation(p0: (Double, Color), p1: (Double, Color), value: Double): Color = {
+    if(p0._1 > value) p0._2
+    else {
+      val ratio = (value - p0._1)/(p1._1 - p0._1)
+      Color(
+        math.round(p0._2.red + (p1._2.red - p0._2.red) * ratio).toInt,
+        math.round(p0._2.green + (p1._2.green - p0._2.green) * ratio).toInt,
+        math.round(p0._2.blue + (p1._2.blue - p0._2.blue ) * ratio).toInt
+      )
+    }
   }
 
   /**
@@ -109,8 +113,40 @@ object Visualization {
     * @return A 360×180 image where each pixel shows the predicted temperature at its location
     */
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
-    ???
+
+    lazy val temps = temperatures.toList.sortBy(t => (t._1.lat, t._1.lon))
+    val pixels: Array[Pixel] = buildPixelArray(temps, colors)
+    Image.apply(IMG_WIDTH, IMG_HEIGHT, pixels)
   }
+
+  /**
+    * Builds a pixel Array from a collection of (Location, Double), sorted by Location
+    * @param temperatures
+    * @param colors
+    * @return
+    */
+  def buildPixelArray(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Array[Pixel] = {
+    (0 until IMG_WIDTH * IMG_HEIGHT).par.map {
+      pos => {
+        interpolateColor(
+          colors,
+          predictTemperature(temperatures, indexToLocation(IMG_WIDTH, IMG_HEIGHT, pos))
+        ).toPixel()
+      }
+    }.toArray
+  }
+
+  def indexToLocation(width: Int, height: Int, index: Int): Location = {
+    val widthFactor = 180 * 2 / width.toDouble
+    val heightFactor = 90 * 2 / height.toDouble
+
+    val x:Int = index % width
+    val y:Int = index / height
+
+    xyToLocation((y * heightFactor).toInt, (x * widthFactor).toInt)
+  }
+  def xyToLocation(x: Int, y: Int): Location = Location(90 - y, x - 180)
+
 
 }
 

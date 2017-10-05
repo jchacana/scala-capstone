@@ -23,4 +23,13 @@ trait VisualizationTest extends FunSuite with Checkers {
 
     assert(scala.math.round(0.8) === scala.math.round(Visualization.gdc(nisum, alcantara)))
   }
+
+
+  test("xy to Location") {
+    assert(Location(90,-180) === Visualization.xyToLocation(0,0))
+    assert(Location(0,0) === Visualization.xyToLocation(180, 90))
+  }
+
+
+
 }
