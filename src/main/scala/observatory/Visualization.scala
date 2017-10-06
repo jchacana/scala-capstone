@@ -90,21 +90,23 @@ object Visualization {
       case Some((_, color)) => color
       case None => {
         val (smaller, greater) = points.toList.sortBy(_._1).partition(_._1 < value)
-        interpolation(smaller.last, greater.head, value)
+        interpolation(smaller.reverse.headOption, greater.headOption, value)
       }
     }
   }
 
-  def interpolation(p0: (Double, Color), p1: (Double, Color), value: Double): Color = {
-    if(p0._1 > value) p0._2
-    else {
-      val ratio = (value - p0._1)/(p1._1 - p0._1)
+  def interpolation(p0: Option[(Double, Color)], p1: Option[(Double, Color)], value: Double): Color = (p0, p1) match {
+    case (Some((paVal, paColor)), Some((pbVal, pbColor))) => {
+      val ratio = (value - paVal)/(pbVal - paVal)
       Color(
-        math.round(p0._2.red + (p1._2.red - p0._2.red) * ratio).toInt,
-        math.round(p0._2.green + (p1._2.green - p0._2.green) * ratio).toInt,
-        math.round(p0._2.blue + (p1._2.blue - p0._2.blue ) * ratio).toInt
+        red = math.round(paColor.red + (pbColor.red - paColor.red) * ratio).toInt,
+        green = math.round(paColor.green + (pbColor.green - paColor.green) * ratio).toInt,
+        blue = math.round(paColor.blue + (pbColor.blue - paColor.blue ) * ratio).toInt
       )
     }
+    case (Some(pA), None) => pA._2
+    case (None, Some(pB)) => pB._2
+    case _ => Color(0, 0, 0)
   }
 
   /**
@@ -141,9 +143,9 @@ object Visualization {
     val heightFactor = 90 * 2 / height.toDouble
 
     val x:Int = index % width
-    val y:Int = index / height
+    val y:Int = index / width
 
-    xyToLocation((y * heightFactor).toInt, (x * widthFactor).toInt)
+    Location(90 - (y * heightFactor), (x * widthFactor) - 180)
   }
   def xyToLocation(x: Int, y: Int): Location = Location(90 - y, x - 180)
 
