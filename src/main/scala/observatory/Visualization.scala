@@ -101,53 +101,79 @@ object Visualization {
       Color(
         red = math.round(paColor.red + (pbColor.red - paColor.red) * ratio).toInt,
         green = math.round(paColor.green + (pbColor.green - paColor.green) * ratio).toInt,
-        blue = math.round(paColor.blue + (pbColor.blue - paColor.blue ) * ratio).toInt
-      )
+        blue = math.round(paColor.blue + (pbColor.blue - paColor.blue ) * ratio).toInt,
+        255)
     }
     case (Some(pA), None) => pA._2
     case (None, Some(pB)) => pB._2
-    case _ => Color(0, 0, 0)
+    case _ => Color(0, 0, 0, 255)
   }
 
-  /**
-    * @param temperatures Known temperatures
-    * @param colors Color scale
-    * @return A 360×180 image where each pixel shows the predicted temperature at its location
-    */
+
+  trait Visualizer {
+    val alpha: Int
+    val width: Int
+    val height: Int
+
+
+    def toPixel(color: Color) = Pixel.apply(color.red, color.green, color.blue, alpha)
+    /**
+      * @param temperatures Known temperatures
+      * @param colors Color scale
+      * @return A 360×180 image where each pixel shows the predicted temperature at its location
+      */
+    def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
+
+      lazy val temps = temperatures.toList.sortBy(t => (t._1.lat, t._1.lon))
+      val pixels: Array[Pixel] = buildPixelArray(temps, colors)
+      Image.apply(width, height, pixels)
+    }
+
+    /**
+      * Builds a pixel Array from a collection of (Location, Double), sorted by Location
+      * @param temperatures
+      * @param colors
+      * @return
+      */
+    def buildPixelArray(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Array[Pixel] = {
+      (0 until width * height).par.map {
+        pos => {
+          toPixel(interpolateColor(
+            colors,
+            predictTemperature(temperatures, indexToLocation(width, height, pos))
+          ))
+        }
+      }.toArray
+    }
+
+    def indexToLocation(imageWidth: Int, imageHeight: Int, index: Int): Location = {
+      val widthFactor = 180 * 2 / imageWidth.toDouble
+      val heightFactor = 90 * 2 / imageHeight.toDouble
+
+      val x:Int = index % imageWidth
+      val y:Int = index / imageWidth
+
+      Location(90 - (y * heightFactor), (x * widthFactor) - 180)
+    }
+    def xyToLocation(x: Int, y: Int): Location = Location(90 - y, x - 180)
+
+  }
+
+  class Milestone2Visualizer extends Visualizer {
+    override val alpha: Int = 255
+    override val width: Int = IMG_WIDTH
+    override val height: Int = IMG_HEIGHT
+
+  }
+
+
   def visualize(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Image = {
+    val visualizer:Visualizer = new Milestone2Visualizer
 
-    lazy val temps = temperatures.toList.sortBy(t => (t._1.lat, t._1.lon))
-    val pixels: Array[Pixel] = buildPixelArray(temps, colors)
-    Image.apply(IMG_WIDTH, IMG_HEIGHT, pixels)
+    visualizer.visualize(temperatures, colors)
   }
 
-  /**
-    * Builds a pixel Array from a collection of (Location, Double), sorted by Location
-    * @param temperatures
-    * @param colors
-    * @return
-    */
-  def buildPixelArray(temperatures: Iterable[(Location, Double)], colors: Iterable[(Double, Color)]): Array[Pixel] = {
-    (0 until IMG_WIDTH * IMG_HEIGHT).par.map {
-      pos => {
-        interpolateColor(
-          colors,
-          predictTemperature(temperatures, indexToLocation(IMG_WIDTH, IMG_HEIGHT, pos))
-        ).toPixel()
-      }
-    }.toArray
-  }
 
-  def indexToLocation(width: Int, height: Int, index: Int): Location = {
-    val widthFactor = 180 * 2 / width.toDouble
-    val heightFactor = 90 * 2 / height.toDouble
-
-    val x:Int = index % width
-    val y:Int = index / width
-
-    Location(90 - (y * heightFactor), (x * widthFactor) - 180)
-  }
-  def xyToLocation(x: Int, y: Int): Location = Location(90 - y, x - 180)
 
 
 }
