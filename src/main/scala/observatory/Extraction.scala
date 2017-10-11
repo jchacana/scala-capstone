@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
   */
 
 case class Station(stn: String, wban: String, location: Location) extends Serializable
-case class Temperature(stn: String, wban: String, month: Int, day: Int, temp: Double )
+case class TemperatureRow(stn: String, wban: String, month: Int, day: Int, temp: Double )
 
 object Extraction {
 
@@ -38,7 +38,7 @@ object Extraction {
     * @param temperaturesFile Path of the temperatures resource file to use (e.g. "/1975.csv")
     * @return A sequence containing triplets (date, location, temperature)
     */
-  def locateTemperatures(year: Int, stationsFile: String, temperaturesFile: String): Iterable[(LocalDate, Location, Double)] = {
+  def locateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): Iterable[(LocalDate, Location, Temperature)] = {
 
     val resp = readTemperatures(temperaturesFile).join(readStations(stationsFile))
       .map { r =>
@@ -51,7 +51,7 @@ object Extraction {
     * @param records A sequence containing triplets (date, location, temperature)
     * @return A sequence containing, for each location, the average temperature over the year.
     */
-  def locationYearlyAverageRecords(records: Iterable[(LocalDate, Location, Double)]): Iterable[(Location, Double)] = {
+  def locationYearlyAverageRecords(records: Iterable[(LocalDate, Location, Temperature)]): Iterable[(Location, Temperature)] = {
     records.groupBy(loc => loc._2)
       .map {
         case (loc, temp) =>
@@ -76,7 +76,7 @@ object Extraction {
   }
 
   def readTemperatures(resource: String) = {
-    read[Temperature](resource, composeTemperature).filter(t => t.temp != 9999.9)
+    read[TemperatureRow](resource, composeTemperature).filter(t => t.temp != 9999.9)
       .map(temp => ((temp.stn, temp.wban), temp))
   }
 
@@ -89,8 +89,8 @@ object Extraction {
     )
   }
 
-  def composeTemperature(arr: Array[String]): Temperature = {
-    Temperature(
+  def composeTemperature(arr: Array[String]): TemperatureRow = {
+    TemperatureRow(
       stn = arr(0),
       wban = arr(1),
       month = arr(2).toInt,
