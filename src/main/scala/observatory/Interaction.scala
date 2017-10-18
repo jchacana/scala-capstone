@@ -9,11 +9,11 @@ import observatory.Visualization.{Visualizer, interpolateColor, predictTemperatu
 object Interaction {
 
    /**
-    * @param tile Tile coordinates
+    * @param theTile Tile coordinates
     * @return The latitude and longitude of the top-left corner of the tile, as per http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     */
-  def tileLocation(tile: Tile): Location = {
-    tile.toLocation
+  def tileLocation(theTile: Tile): Location = {
+    theTile.toLocation
   }
 
   /**
@@ -63,9 +63,9 @@ object Interaction {
 
 
       val xPos = (index % imageWidth).toDouble / imageWidth + tile.x
-      val yPos = (index / imageWidth).toDouble / imageHeight + tile.y
+      val yPos = (index / imageHeight).toDouble / imageHeight + tile.y
 
-      Tile(xPos.toInt, yPos.toInt, tile.zoom.toShort).toLocation
+      Tile(xPos, yPos, tile.zoom).toLocation
     }
   }
 

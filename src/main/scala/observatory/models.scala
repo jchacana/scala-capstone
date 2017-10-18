@@ -29,11 +29,12 @@ case class Point(lat: Double, lon: Double) {
   * @param y Y coordinate of the tile
   * @param zoom Zoom level, 0 ≤ zoom ≤ 19
   */
-case class Tile(x: Int, y: Int, zoom: Int) {
-  def toLocation = new Location(
-    toDegrees(atan(sinh(Pi * (1.0 - 2.0 * y.toDouble / (1<<zoom.toShort))))),
-    x.toDouble / (1<<zoom.toShort) * 360.0 - 180.0
-  )
+case class Tile(x: Double, y: Double, zoom: Int) {
+  def toLocation = {
+    val lat = toDegrees(atan(sinh(Pi * (1.0 - 2.0 * y / (1 << zoom)))))
+    val lon = x / (1 << zoom) * 360.0 - 180.0
+    Location(lat, lon)
+  }
   def toURI = new URI("http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png")
 }
 
