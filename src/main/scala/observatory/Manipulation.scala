@@ -27,7 +27,12 @@ object Manipulation {
     * @return A function that, given a latitude and a longitude, returns the average temperature at this location
     */
   def average(temperaturess: Iterable[Iterable[(Location, Temperature)]]): GridLocation => Temperature = {
-    ???
+    val gridsByLocation = temperaturess.map(temps => makeGrid(temps))
+
+    gridLocation => {
+      val temperatures = gridsByLocation.map(grid => grid(gridLocation))
+      temperatures.sum / temperatures.size
+    }
   }
 
   /**
@@ -36,7 +41,9 @@ object Manipulation {
     * @return A grid containing the deviations compared to the normal temperatures
     */
   def deviation(temperatures: Iterable[(Location, Temperature)], normals: GridLocation => Temperature): GridLocation => Temperature = {
-    ???
+    val grid = makeGrid(temperatures)
+
+    gridLocation => grid(gridLocation) - normals(gridLocation)
   }
 
 
