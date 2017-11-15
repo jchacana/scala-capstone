@@ -29,6 +29,13 @@ object Visualization2 {
     d11 * point.x * point.y
   }
 
+  def pixelLocations(tile: Tile, width: Int, height: Int) ={
+    for {
+      x <- 0 until width
+      y <- 0 until height
+    } yield x + y * width -> Tile(x / width + tile.x, y / height + tile.y, tile.zoom).toLocation
+  }
+
   /**
     * @param grid Grid to visualize
     * @param colors Color scale to use
@@ -40,7 +47,32 @@ object Visualization2 {
     colors: Iterable[(Temperature, Color)],
     tile: Tile
   ): Image = {
-    ???
+    val width = 256
+    val height = 256
+    val pixels = pixelLocations(tile, width, height).par.map{
+      case (position, location) => {
+
+        val latRange = List(math.floor(location.lat).toInt, math.ceil(location.lat).toInt)
+        val lonRange = List(math.floor(location.lon).toInt, math.ceil(location.lon).toInt)
+
+        val d00 = grid(GridLocation(latRange(0), lonRange(0)))
+        val d01 = grid(GridLocation(latRange(1), lonRange(0)))
+        val d10 = grid(GridLocation(latRange(0), lonRange(1)))
+        val d11 = grid(GridLocation(latRange(1), lonRange(1)))
+
+        val xFraction = location.lon - lonRange(0)
+        val yFraction = latRange(1) - location.lat
+
+        position -> Visualization.interpolateColor(
+          colors,
+          bilinearInterpolation(CellPoint(xFraction, yFraction), d00, d01, d10, d11)
+        ).toPixel(127)
+      }
+    }.seq
+      .sortBy(p => p._1)
+      .map(p2 => p2._2)
+
+    Image(width, height, pixels.toArray)
   }
 
 }

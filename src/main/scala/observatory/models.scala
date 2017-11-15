@@ -63,7 +63,7 @@ case class CellPoint(x: Double, y: Double)
   * @param blue Level of blue, 0 ≤ blue ≤ 255
   */
 case class Color(red: Int, green: Int, blue: Int, alpha: Int = 255) {
-  def toPixel(): Pixel = Pixel.apply(red, green, blue, alpha)
+  def toPixel(alpha:Int = 255): Pixel = Pixel.apply(red, green, blue, alpha)
 
 }
 
